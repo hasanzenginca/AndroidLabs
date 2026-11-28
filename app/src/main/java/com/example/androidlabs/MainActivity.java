@@ -1,56 +1,67 @@
 package com.example.androidlabs;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.material.snackbar.Snackbar;
-
 public class MainActivity extends AppCompatActivity {
+
+    private EditText nameEditText;
+    private static final int NAME_REQUEST = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-        setContentView(R.layout.activity_main_contraint);
-        getWindow().getDecorView().setSystemUiVisibility(0);
+        nameEditText = findViewById(R.id.nameEditText);
+        Button nextButton = findViewById(R.id.nextButton);
 
-        TextView textView = findViewById(R.id.textView);
-        EditText editText = findViewById(R.id.editText);
-        Button button = findViewById(R.id.button);
-        CheckBox checkBox = findViewById(R.id.checkBox);
+        SharedPreferences preferences =
+                getSharedPreferences("UserPreferences", MODE_PRIVATE);
 
-        // Update the label when the button is clicked.
-        button.setOnClickListener(v -> {
-            String text = editText.getText().toString();
-            textView.setText(text);
+        String savedName = preferences.getString("user_name", "");
 
-            Toast.makeText(
-                    this,
-                    getResources().getString(R.string.toast_message),
-                    Toast.LENGTH_SHORT
-            ).show();
+        nameEditText.setText(savedName);
+
+        nextButton.setOnClickListener(v -> {
+            String name = nameEditText.getText().toString();
+
+            Intent intent = new Intent(MainActivity.this, NameActivity.class);
+            intent.putExtra("user_name", name);
+
+            startActivityForResult(intent, NAME_REQUEST);
         });
+    }
 
-        // Show a Snackbar when the checkbox changes.
-        checkBox.setOnCheckedChangeListener((cb, isChecked) -> {
+    @Override
+    protected void onPause() {
+        super.onPause();
 
-            String status = isChecked
-                    ? getString(R.string.on_text)
-                    : getString(R.string.off_text);
+        SharedPreferences preferences =
+                getSharedPreferences("UserPreferences", MODE_PRIVATE);
 
-            String message = getString(R.string.snackbar_message)
-                    + " " + status;
+        preferences.edit()
+                .putString("user_name", nameEditText.getText().toString())
+                .apply();
+    }
 
-            Snackbar.make(checkBox, message, Snackbar.LENGTH_LONG)
-                    .setAction(R.string.undo_text,
-                            v -> cb.setChecked(!isChecked))
-                    .show();
-        });
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode,
+                                    @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == NAME_REQUEST) {
+            if (resultCode == 0) {
+                nameEditText.requestFocus();
+            } else if (resultCode == 1) {
+                finish();
+            }
+        }
     }
 }
